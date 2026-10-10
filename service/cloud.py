@@ -97,9 +97,18 @@ class CloudStore:
         self.request('PATCH', f'ingestion_runs?id=eq.{run}&status=eq.running',
             {'status':'failed', 'finished_at':datetime.now(timezone.utc).isoformat(), 'error':error[:500]})
 
+    def validate_rules(self, game, rows):
+        games=self.request('GET',f'games?id=eq.{str(uuid.UUID(game))}&select=purpose')
+        if not games:
+            raise CloudError('Hra nebyla nalezena; ověřte její UUID a projekt Supabase.')
+        if games[0]['purpose']=='competition' and any('introduction' in str(r.get('SCENARIO','')).lower() for r in rows):
+            raise CloudError('Pravidla Introduction nepatří do soutěžní hry. Použijte zkušební UUID nebo připojte skutečné Manufacturing Extended.')
+
     def finish(self, run, rows):
         attempt = self.request('GET', f'ingestion_runs?id=eq.{run}&select=dataset')[0]
         rows = normalize(attempt['dataset'], rows)
+        if attempt['dataset']=='Current_Game_Rules':
+            self.validate_rules(self.game,rows)
         # Decimal views are computed by the unchanged, verified Python implementation.
         projection = json.loads(json.dumps(views(attempt['dataset'], rows), default=serial))
         encoded = json.dumps(rows, sort_keys=True, ensure_ascii=False, separators=(',', ':'))

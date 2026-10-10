@@ -91,6 +91,10 @@ def main():
                 try:store.finish(run,rows);raise AssertionError('Fenced worker published')
                 except CloudError:pass
             store.fail(run,'Zámek hry byl převzat; snímek nebyl publikován.')
+        try:
+            store.validate_rules(games[1],workbook['Current_Game_Rules'])
+            raise AssertionError('Introduction accepted for competition')
+        except CloudError:pass
         # Exercise the real worker orchestration against actual database, using the supplied export as OData fixture.
         from service import cli
         original_client = cli.client
@@ -101,13 +105,13 @@ def main():
             def read(self,dataset):return [] if dataset=='Current_Game_Rules' else workbook[dataset]
         try:
             cli.client=lambda:MissingRules()
-            args=cli.parser().parse_args(['--local','sync','--game',games[1],'--once'])
+            args=cli.parser().parse_args(['--local','sync','--game',games[0],'--once'])
             try:cli.run(args);raise AssertionError('Worker accepted missing game rules')
             except CloudError:pass
-            assert store.request('GET',f'source_heads?game_id=eq.{games[1]}')==[]
+            assert store.request('GET',f'source_heads?game_id=eq.{games[0]}&origin=eq.odata')==[]
             cli.client=lambda:WorkbookClient()
             cli.run(args)
-            assert len(store.request('GET',f'source_heads?game_id=eq.{games[1]}'))==len(ENTITIES)
+            assert len(store.request('GET',f'source_heads?game_id=eq.{games[0]}&origin=eq.odata'))==len(ENTITIES)
         finally:cli.client=original_client
         print('PASS: actual Auth, member RLS, outsider/anonymous denial, editor/viewer settings, game isolation, duplicate import, outage/partial-page preservation, lease exclusion/fencing, RLS history, full worker fixture cycle and missing-rules refusal.')
     finally:

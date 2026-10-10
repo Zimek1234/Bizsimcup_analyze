@@ -46,7 +46,7 @@ Vytvořte **dvě různé hry**; UUID týmu získáte v předchozím kroku:
 
 Do `ERPSIM_GAME_ID` nastavte UUID příslušné hry. Při každém novém herním běhu vytvořte novou hru a přepněte ID služby. Metadata `GAME`/`SCENARIO` nejsou jedinečným identifikátorem soutěžní relace: systém reset hry podle stejné URL nedokáže spolehlivě poznat. Nesmíte pokračovat ve starém ID při restartu soutěže.
 
-Import zkoušky (musí cílit na UUID zkušební hry):
+Import zkoušky (musí cílit na UUID zkušební hry; pravidla Introduction jsou pro soutěžní UUID odmítnuta před importem sešitu):
 
 ```bat
 import-data.bat --game TRIAL_GAME_UUID --file "samples\BIZ SIM data ze zkušebky.xlsx" --origin zkouska --dataset Workbook

@@ -10,7 +10,7 @@
 | Databáze a API | Skutečný PostgreSQL 17.6, GoTrue 2.196.0, PostgREST 14.17; obě migrace aplikovány lokálně |
 | Skutečný import | Dodaný Introduction sešit načten nezměněnou čtečkou, všech 18 podporovaných listů uloženo přes Supabase REST/RPC |
 | Opakovaný import | Stejný snímek znovu použit; 186 prodejních řádků zůstalo 186, součet beze změny |
-| Oddělení her a původů | Zkouška a jiná hra oddělené; Excel a OData samostatné projekce bez součtu |
+| Oddělení her a původů | Zkouška a jiná hra oddělené; pravidla Introduction odmítnuta pro soutěžní UUID; Excel a OData samostatné projekce bez součtu |
 | Auth / RLS | Skutečné přihlášení heslem; anonym a nečlen nečtou data; viewer nezmění nastavení; editor ho změní; uživatel nespustí worker RPC ani nevytvoří hru |
 | Zámek | Druhý worker odmítnut; po expiraci převzetí s vyšší generací; opožděný původní worker nemůže publikovat |
 | Výpadek / částečné čtení | Řízená chyba metadat i čtení zachovala poslední úspěšný snímek; chyba zaznamenána |

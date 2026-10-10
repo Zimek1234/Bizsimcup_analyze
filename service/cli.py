@@ -67,6 +67,8 @@ def run(args):
             dataset, rows = read_file(content,args.file.name,args.dataset,args.sheet,
                 args.separator,args.decimal,args.encoding)
             data = {dataset:rows}
+        if 'Current_Game_Rules' in data:
+            store.validate_rules(args.game,data['Current_Game_Rules'])
         with store.lease(args.game):
             for dataset, rows in data.items():
                 attempt = store.begin(args.game,dataset,'file:'+args.origin)
@@ -110,6 +112,10 @@ def run(args):
                     if dataset == 'Current_Game_Rules':
                         if not rows:
                             raise ODataError('Current_Game_Rules jsou prázdná; ověřte aktivní hru.')
+                        try:
+                            store.validate_rules(args.game,rows)
+                        except CloudError as exc:
+                            raise ODataError(str(exc)) from None
                         self.rules_ok = True
                     return rows
             cycle = CycleClient()
