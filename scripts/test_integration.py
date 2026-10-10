@@ -104,11 +104,12 @@ def main():
         class MissingRules(WorkbookClient):
             def read(self,dataset):return [] if dataset=='Current_Game_Rules' else workbook[dataset]
         try:
+            before_rules=store.request('GET',f'source_heads?game_id=eq.{games[0]}&origin=eq.odata')
             cli.client=lambda:MissingRules()
             args=cli.parser().parse_args(['--local','sync','--game',games[0],'--once'])
             try:cli.run(args);raise AssertionError('Worker accepted missing game rules')
             except CloudError:pass
-            assert store.request('GET',f'source_heads?game_id=eq.{games[0]}&origin=eq.odata')==[]
+            assert store.request('GET',f'source_heads?game_id=eq.{games[0]}&origin=eq.odata')==before_rules
             cli.client=lambda:WorkbookClient()
             cli.run(args)
             assert len(store.request('GET',f'source_heads?game_id=eq.{games[0]}&origin=eq.odata'))==len(ENTITIES)
