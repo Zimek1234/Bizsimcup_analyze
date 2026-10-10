@@ -4,7 +4,7 @@
 begin;
 do $$
 declare
-  owner_email text := 'DOPLNTE_EMAIL_UZIVATELE';
+  owner_email text := 'illnertom@gmail.com';
   team_name text := 'ERPsim tým';
   owner_id uuid;
   first_team uuid;
