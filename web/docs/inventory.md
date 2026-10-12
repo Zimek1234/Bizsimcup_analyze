@@ -24,6 +24,12 @@ Hotové výrobky zachovávají dodávky za nejvýše 5 pozorovaných herních kr
 
 Suroviny, obaly a nezařazené položky nepoužívají tempo prodejů k odhadu spotřeby. Dostupné `BOM_Changes` dokládají změny, nikoli úplnou aktuální recepturu; samy s výrobními příkazy neprokazují úplnou spotřebu. Výdrž zůstává **Nedostupné** s vysvětlením, dokud nebude dostupná ověřená spotřeba nebo úplná receptura s výrobním plánem. Také upozornění na dny zásoby používají pouze doložené hotové výrobky.
 
+## Kompaktní zobrazení
+
+Tato prezentační úprava vychází ze sloučeného PR #4 (`a77be60`). Analytické funkce ani zdrojová data se nemění.
+
+Chybějící vypočitatelná hodnota se zobrazuje jako — s informační ikonou. Důvod je dostupný při najetí myší, zaměření klávesnicí i kliknutí/dotyku; Escape nebo kliknutí mimo jej zavře. Vysvětlivka se vykresluje mimo posuvný kontejner, aby nebyla oříznutá. U surovin, obalů a nezařazených položek je tempo a rozpracovanost pouze —; záhlaví jednou vysvětluje platnost těchto ukazatelů pro hotové výrobky. Důvod chybějící výdrže zůstává pod ikonou. Odhad dnů se formátuje nejvýše na jedno desetinné místo, skutečné nuly jako 0. Rozpory lokací zůstávají viditelně označené. Výpočty a vstupní data se nemění.
+
 ## Ověření a screenshot
 
 - Skutečný Introduction sešit: 22 položek = 12 hotových výrobků, 6 surovin KG, 4 obaly ST; 8 nulových zásob hotových výrobků. Suroviny a obaly v původním sešitu nulovou zásobu nemají; jejich nuly se ověřují pouze v cílených testech a prohlížečových testovacích odpovědích, ne změnou živých dat.
