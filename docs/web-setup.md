@@ -25,14 +25,13 @@ Samotné přihlášení neopravňuje číst týmová data. Přidávání uživat
 
 ## 2. Notebook Windows: Python služba a import
 
-Nainstalujte Python 3.12 a Git. Naklonujte repozitář a přepněte větev:
+Nainstalujte 64bit Python 3.13 (nebo 3.12) a Git. Pro aktualizaci existující instalace viz [Windows synchronizátor](windows-sync.md). Naklonujte repozitář a přepněte větev:
 
 ```bat
 git clone https://github.com/Zimek1234/Bizsimcup_analyze.git
 cd Bizsimcup_analyze
 git switch feat/web-supabase
-py -3 -m venv .venv
-.venv\Scripts\python.exe -m pip install -r requirements-service.txt
+install-sync.bat 3.13
 ```
 
 Zkopírujte `service/.env.example` do `service/.env`. Vyplňte na notebooku `SUPABASE_URL`, **service-role JWT key** (Supabase Settings → API → legacy service_role; adapter posílá tento klíč také jako Bearer), uživatele a heslo ERPsim. Soubor je ignorovaný Gitem. Chraňte ho přístupovými právy Windows; přístup k service-role opravňuje ke všem projektovým datům. Hodnoty z prostředí mají přednost před souborem. Hesla se při spuštění nevypisují. Nepoužívejte cloudový tajný klíč pro Vercel.
@@ -40,8 +39,8 @@ Zkopírujte `service/.env.example` do `service/.env`. Vyplňte na notebooku `SUP
 Vytvořte **dvě různé hry**; UUID týmu získáte v předchozím kroku:
 
 ```bat
-.venv\Scripts\python.exe scripts\worker_launcher.py create-game --team TEAM_UUID --name "Zkouška Introduction" --purpose trial
-.venv\Scripts\python.exe scripts\worker_launcher.py create-game --team TEAM_UUID --name "Soutěž Manufacturing Extended" --purpose competition
+.venv-sync\Scripts\python.exe scripts\worker_launcher.py create-game --team TEAM_UUID --name "Zkouška Introduction" --purpose trial
+.venv-sync\Scripts\python.exe scripts\worker_launcher.py create-game --team TEAM_UUID --name "Soutěž Manufacturing Extended" --purpose competition
 ```
 
 Do `ERPSIM_GAME_ID` nastavte UUID příslušné hry. Při každém novém herním běhu vytvořte novou hru a přepněte ID služby. Metadata `GAME`/`SCENARIO` nejsou jedinečným identifikátorem soutěžní relace: systém reset hry podle stejné URL nedokáže spolehlivě poznat. Nesmíte pokračovat ve starém ID při restartu soutěže.
@@ -75,7 +74,7 @@ Výchozí interval je 30 s a mění se v webovém nastavení hry. Po dokončení
 
 **Vhodnost 30 s nebyla ověřena na Extended.** Na notebooku spusťte `--once`, zkontrolujte délku cyklu, počty řádků a chyby. Pokud cyklus trvá přes 30 s nebo služba omezuje přístup, zvyšte interval a omezte entity. Na novém hostingu zopakujte `probe` a `sync --once` s oprávněným přístupem; úspěch na notebooku neprokazuje přístup z datacentra.
 
-Pro automatický Windows běh použijte Plánovač úloh: program `.venv\Scripts\python.exe`, argumenty `scripts\worker_launcher.py sync`, pracovní složka kořen projektu; vypněte souběžné instance, nastavte restart po chybě a použijte důvěryhodný účet, který smí číst `service/.env`. `start-sync.bat` je vhodný pro ruční spuštění; při automatickém běhu se balíčky instalují předem.
+Pro automatický Windows běh použijte Plánovač úloh: program `.venv-sync\Scripts\python.exe`, argumenty `scripts\worker_launcher.py sync`, pracovní složka kořen projektu; vypněte souběžné instance, nastavte restart po chybě a použijte důvěryhodný účet, který smí číst `service/.env`. `start-sync.bat` je vhodný pro ruční spuštění; balíčky se instalují jen samostatným `install-sync.bat`.
 
 ## 3. Vercel z GitHubu
 
@@ -121,7 +120,7 @@ Podrobný stav testů je v `docs/web-verification.md`. Pro vývoj:
 
 ```sh
 python -m venv .venv
-.venv/bin/python -m pip install -r requirements-dev.txt -r requirements-service.txt
+.venv/bin/python -m pip install -r requirements-dev.txt python-dotenv==1.2.2
 .venv/bin/python -m pytest -q
 PYTHONPATH=. .venv/bin/python scripts/export_parity.py
 npm --prefix web ci

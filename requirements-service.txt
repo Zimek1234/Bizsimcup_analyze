@@ -1,2 +1,7 @@
--r requirements.txt
+# Standalone worker: do not include the Streamlit application's requirements.
+# pandas needs NumPy, but Arrow is optional for our XLSX/CSV/Decimal operations.
+pandas==3.0.1
+openpyxl==3.1.5
+requests==2.34.2
+defusedxml==0.7.1
 python-dotenv==1.2.2
