@@ -1,13 +1,11 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-if not exist ".venv\Scripts\python.exe" (
-  py -3 -m venv .venv
-  if errorlevel 1 goto :failed
+if not exist ".venv-sync\Scripts\python.exe" (
+  echo Nejprve spustte install-sync.bat 3.13 nebo install-sync.bat 3.12.
+  exit /b 1
 )
-.venv\Scripts\python.exe -m pip install -r requirements-service.txt
-if errorlevel 1 goto :failed
-.venv\Scripts\python.exe scripts\worker_launcher.py probe %*
+.venv-sync\Scripts\python.exe scripts\worker_launcher.py probe %*
 if errorlevel 1 goto :failed
 pause
 exit /b 0

@@ -85,14 +85,13 @@ Ověřte v anonymním okně, že web nabízí pouze přihlášení. Přihlaste s
 
 ## D. Notebook Windows: první funkční Python synchronizátor
 
-Použijte notebook s fungujícím ERPsim přístupem. Nainstalujte Git a Python 3.12. V příkazovém řádku **cmd**:
+Použijte notebook s fungujícím ERPsim přístupem. Nainstalujte Git a 64bit Python 3.13 (nebo 3.12). Pro aktualizaci existující instalace viz [Windows synchronizátor](windows-sync.md). V příkazovém řádku **cmd**:
 
 ```bat
 git clone https://github.com/Zimek1234/Bizsimcup_analyze.git
 cd Bizsimcup_analyze
 git switch feat/web-supabase
-py -3 -m venv .venv
-.venv\Scripts\python.exe -m pip install -r requirements-service.txt
+install-sync.bat 3.13
 copy service\.env.example service\.env
 notepad service\.env
 ```
@@ -157,12 +156,12 @@ Terminál nechte běžet. Přibližně po dalším cyklu se musí posunout posle
 
 Po prvním úspěšném ručním běhu vytvořte úlohu v Plánovači úloh Windows:
 
-- Program: skutečná úplná cesta k `.venv\Scripts\python.exe`.
+- Program: skutečná úplná cesta k `.venv-sync\Scripts\python.exe`.
 - Argumenty: `scripts\worker_launcher.py sync`.
 - Spustit v: skutečná kořenová složka `Bizsimcup_analyze`.
 - Spouštět při přihlášení vašeho uživatele, při chybě restartovat, **nespouštět novou instanci**, když už jedna běží.
 
-Nepoužívejte BAT instalující balíčky jako pravidelnou plánovanou úlohu. Balíčky jsou nainstalované z D. Kontrolujte stav zdrojů ve webu; stav Running úlohy není důkazem úspěšného načítání. Pro ruční test nebo import úlohu nejprve zastavte – zámek hry odmítá souběh. Web sám synchronizátor nespouští.
+Instalátor `install-sync.bat` nepoužívejte jako pravidelnou plánovanou úlohu; spouštěcí BAT již nic neinstalují. Balíčky jsou nainstalované z D. Kontrolujte stav zdrojů ve webu; stav Running úlohy není důkazem úspěšného načítání. Pro ruční test nebo import úlohu nejprve zastavte – zámek hry odmítá souběh. Web sám synchronizátor nespouští.
 
 Přesun na trvalý Linux hosting s Dockerem je připraven v `deployment/compose.sync.yml`. Na **cílovém** hostingu je nejprve nutné ověřit `probe`, poté `sync --once`, potom pravidelný běh a čas posledního úspěchu ve webu. Bez tohoto testu není cloudové načítání ověřené. Notebookový synchronizátor neposuzujte jako spuštěný jen proto, že BAT existuje; jeho první skutečné spuštění a výsledky musí být ověřeny na notebooku.
 
