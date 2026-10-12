@@ -1,5 +1,6 @@
 import Decimal from 'decimal.js';
 import {productCatalogue,resolveProduct,productLabel} from './products';
+import {inventoryItems} from './inventory';
 import type {DashboardData,Row,Settings} from './types';
 export type Filters={origin:string;company:string;currency:string;unit:string;product:string;area:string;channel:string;round:string};
 export const unknown='Neuvedeno';
@@ -69,7 +70,7 @@ export function alerts(data:DashboardData,f:Filters,model:ReturnType<typeof comp
   const latest=new Map<string,DashboardData['runs'][number]>();for(const r of data.runs.filter(r=>r.origin===f.origin))if(!latest.has(r.dataset))latest.set(r.dataset,r);
   for(const r of latest.values())if(r.status==='failed')result.push({title:`Načtení ${r.dataset} selhalo`,detail:r.error??'Ověřte připojení v diagnostice.',severity:4});
  }
- for(const p of model.products)if(p.days!==null&&p.days<settings.stock_days){result.push({title:`${p.code} · ${p.name}: odhad zásoby ${p.days.toFixed(1)} herního dne`,detail:`Odhad podle dodávek za nejvýše posledních 5 herních kroků. Rozpracováno: ${p.wip===null?'nedostupné':p.wip+' '+p.unit}. Prověřte poptávku, termíny příkazů a recepturu před změnou výroby.`,severity:p.stock===0?3:2});}
+ for(const p of inventoryItems(data,f.origin,f.company).filter(i=>i.type==='finished'&&(!f.product||i.code===f.product)))if(p.days!==null&&p.days<settings.stock_days){result.push({title:`${p.code} · ${p.name}: odhad zásoby ${p.days.toFixed(1)} herního dne`,detail:`Odhad podle dodávek za nejvýše posledních 5 herních kroků. Rozpracováno: ${p.wip===null?'nedostupné':p.wip+' '+p.unit}. Prověřte poptávku, termíny příkazů a recepturu před změnou výroby.`,severity:num(p.stock)===0?3:2});}
  if(model.revenue&&model.contribution!==null&&100*model.contribution/model.revenue<settings.margin_percent)result.push({title:'Nízký příspěvek před režijními náklady',detail:`Podíl příspěvku je ${(100*model.contribution/model.revenue).toFixed(1)} %. Ověřte ceny a náklady v kanálech. Nejde o účetní čistý zisk.`,severity:2});
  const mkCurrencies=unique(model.marketing,'currency');const mk=sum(model.marketing,'marketing');
  if(settings.marketing_limit!==null&&mk!==null&&mkCurrencies.length===1&&mkCurrencies[0]===settings.currency&&mk>settings.marketing_limit)result.push({title:'Marketing překročil nastavený limit',detail:`Výdaj ${mk} ${mkCurrencies[0]} ve zvoleném období. Prověřte rozdělení podle oblastí; souběh s prodejem neprokazuje návratnost.`,severity:1});
