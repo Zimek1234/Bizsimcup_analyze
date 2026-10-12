@@ -14,7 +14,7 @@ try{
  await page.getByText('3 973 037',{exact:false}).first().waitFor();
  const r=await page.request.get('http://127.0.0.1:3000/api/dashboard');assert.equal(r.status(),200);const data=await r.json();assert.equal(data.heads.find(h=>h.dataset==='Sales').snapshots.rows.length,186);
  await page.screenshot({path:new URL('../../.local/dashboard.png',import.meta.url).pathname,fullPage:true});
- await page.getByRole('button',{name:'Podrobnosti',exact:true}).click();await page.getByRole('heading',{name:'Ceny a příspěvek podle kanálu a oblasti'}).waitFor();
+ await page.getByRole('button',{name:'Podrobnosti',exact:true}).click();await page.getByRole('heading',{name:'Detail výrobku: realizované ceny a příspěvek'}).waitFor();
  await page.getByLabel('Kanál',{exact:true}).selectOption('12');await page.getByLabel('Výrobek',{exact:true}).selectOption('F01');
  await page.getByRole('button',{name:'Přehled',exact:true}).click();await page.getByRole('heading',{name:'Výrobky a zásoba'}).waitFor();
  await page.getByRole('button',{name:'Nastavení a zdroje',exact:true}).click();await page.getByRole('heading',{name:'Upozornění a interval služby'}).waitFor();
