@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 const root=new URL('../../',import.meta.url);
 const c=JSON.parse(readFileSync(new URL('.local/demo.json',root),'utf8'));
 const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH??(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
-const page=await browser.newPage({viewport:{width:1440,height:1100}}),errors=[];page.on('pageerror',e=>errors.push(e.message));
+const page=await browser.newPage({viewport:{width:1440,height:1100},locale:'cs-CZ',timezoneId:'Europe/Prague'}),errors=[];page.on('pageerror',e=>errors.push(e.message));
 try{
  await page.goto('http://127.0.0.1:3000/');await page.getByLabel('E-mail').fill(c.email);await page.getByLabel('Heslo',{exact:true}).fill(c.password);await page.getByRole('button',{name:'Přihlásit se',exact:true}).click();await page.getByRole('heading',{name:'Přehled hry',exact:true}).waitFor();
  const card=page.getByTestId('inventory-card');await card.getByRole('table').waitFor();
