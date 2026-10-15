@@ -1,0 +1,81 @@
+name: Web and preserved Python
+on:
+  push:
+    branches: [main, feat/web-supabase]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  standalone-sync:
+    strategy:
+      matrix:
+        python: ['3.12', '3.13']
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Windows installer
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: install-sync.bat ${{ matrix.python }}
+      - name: Linux standalone install and import check
+        if: runner.os == 'Linux'
+        run: |
+          python -m venv .venv-sync
+          .venv-sync/bin/python -m pip install --only-binary=:all: -r requirements-service.txt
+          .venv-sync/bin/python -m pip check
+          .venv-sync/bin/python scripts/check_sync_install.py
+      - name: Windows file and OData tests without dashboard dependencies
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          .venv-sync\Scripts\python.exe -m pip install pytest==9.1.1
+          .venv-sync\Scripts\python.exe -m pytest -q tests/test_data.py tests/test_odata.py
+      - name: Linux file and OData tests without dashboard dependencies
+        if: runner.os == 'Linux'
+        run: |
+          .venv-sync/bin/python -m pip install pytest==9.1.1
+          .venv-sync/bin/python -m pytest -q tests/test_data.py tests/test_odata.py
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      # Original dashboard pins remain independent of the standalone worker.
+      - run: python -m pip install -r requirements-dev.txt python-dotenv==1.2.2
+      - run: python -m pytest -q
+      - run: python scripts/export_parity.py
+        env:
+          PYTHONPATH: .
+      - run: npm ci
+        working-directory: web
+      - run: python scripts/local_stack.py
+      - run: python scripts/test_integration.py
+      - run: python scripts/seed_local.py
+      - run: |
+          npm test
+          npm run typecheck
+          npm run build
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - name: Authenticated browser smoke
+        run: |
+          npm start > ../.local/web.log 2>&1 &
+          for i in $(seq 1 30); do curl -fsS http://localhost:3000/login >/dev/null && break || sleep 1; done
+          node scripts/smoke.mjs
+        working-directory: web
+      - name: Stop only test services
+        if: always()
+        run: docker compose --env-file .local/stack.env -f deployment/local/compose.yml down -v

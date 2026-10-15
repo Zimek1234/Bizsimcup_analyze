@@ -1,0 +1,22 @@
+import {describe,it,expect} from 'vitest';
+import {readFileSync} from 'node:fs';
+import {alerts,compute,dec,sum,type Filters} from './analytics';
+import {defaultSettings,type DashboardData} from './types';
+const fixture=JSON.parse(readFileSync(new URL('../../.local/parity.json',import.meta.url),'utf8'));
+const data:DashboardData={games:[],game:null,runs:[],editable:false,preview:false,settings:defaultSettings,...fixture};
+const f:Filters={origin:'file:zkouska',company:'AA',currency:'EUR',unit:'ST',product:'',area:'',channel:'',round:''};
+describe('Skutečný export Introduction a původní Python projekce',()=>{
+ it('souhlasí s původní aplikací bez zaokrouhlení peněžních součtů',()=>{const m=compute(data,f);expect(m.revenue).toBe(3973037.2);expect(m.cost).toBe(957873.74);expect(m.quantity).toBe(626554);expect(m.contribution).toBe(3015163.46);});
+ it('vykázaný zisk používá PROFIT, není příspěvek před režijními náklady',()=>{const m=compute(data,f);expect(m.finance.profit).toBe(2148215.54);expect(m.finance.cash).toBe(3718307);expect(m.finance.valuation).toBe(85928621.6);expect(m.finance.profit).not.toBe(m.contribution);});
+ it('přidání alternativního zdroje nikdy nezdvojí prodeje',()=>{const both={...data,heads:[...data.heads,...data.heads.map(h=>({...h,origin:'odata'}))]};expect(compute(both,f).revenue).toBe(3973037.2);});
+ it('chybějící finanční zdroj znamená nedostupné, nikoli nulu',()=>{const m=compute({...data,heads:data.heads.filter(h=>h.dataset!=='Company_Valuation')},f);expect(m.finance.profit).toBeNull();expect(m.finance.cash).toBeNull();});
+ it('nevyvolává výpadek živého zdroje u Excelu',()=>{expect(alerts(data,f,compute(data,f),Date.now()).some(a=>a.title.includes('neobnovuje'))).toBe(false);});
+ it('jiná geografická oblast se nesmí párovat s trhem',()=>{const changed={...data,heads:data.heads.map(h=>h.dataset==='Market'?{...h,snapshots:{...h.snapshots,views:h.snapshots.views.map(v=>({...v,area:'DIFFERENT'}))}}:h)};expect(compute(changed,f).comparisons.every(p=>p.market===null)).toBe(true);});
+ it('jiný kanál nebo jednotka se nesmí párovat s trhem',()=>{for(const field of ['channel','unit','currency','period','round']){const changed={...data,heads:data.heads.map(h=>h.dataset==='Market'?{...h,snapshots:{...h.snapshots,views:h.snapshots.views.map(v=>({...v,[field]:'OTHER'}))}}:h)};expect(compute(changed,f).comparisons.every(p=>p.market===null)).toBe(true);}});
+ it('filtry neomezují dostupné produkty na Introduction',()=>{const sales=data.heads.find(h=>h.dataset==='Sales')!;const v={...sales.snapshots.views[0],product:'EXT-NEW',description:'Nový produkt',channel:'99'};const changed={...data,heads:data.heads.map(h=>h===sales?{...h,snapshots:{...h.snapshots,views:[v]}}:h)};const m=compute(changed,{...f,channel:'99'});expect(m.sales).toHaveLength(1);expect(m.products.some(p=>p.code==='EXT-NEW')).toBe(true);});
+ it('nemíchá měny a jednotky v celkových součtech',()=>{const sales=data.heads.find(h=>h.dataset==='Sales')!;const changed={...data,heads:data.heads.map(h=>h===sales?{...h,snapshots:{...h.snapshots,views:[sales.snapshots.views[0],{...sales.snapshots.views[0],currency:'USD',unit:'KG'}]}}:h)};const m=compute(changed,{...f,currency:'',unit:''});expect(m.revenue).toBeNull();expect(m.quantity).toBeNull();});
+ it('nulové zásoby bez dostupné poptávky neznamenají výrobu',()=>{const changed={...data,heads:data.heads.filter(h=>h.dataset!=='Sales')};const m=compute(changed,f);expect(m.products.every(p=>p.rate===null&&p.days===null)).toBe(true);expect(alerts(changed,f,m).some(a=>a.title.includes('zásoby'))).toBe(false);});
+ it('nečíselný nebo neomezený parametr je nedostupný',()=>{expect(dec('n/a')).toBeNull();expect(dec('NaN')).toBeNull();expect(dec('Infinity')).toBeNull();});
+ it('shodný popis více výrobků znemožní tržní srovnání',()=>{const source=data.heads.find(h=>h.dataset==='Sales')!;const first=source.snapshots.views[0];const changed={...data,heads:data.heads.map(h=>h===source?{...h,snapshots:{...h.snapshots,views:[first,{...first,product:'OTHER'}]}}:h)};expect(compute(changed,f).comparisons.every(p=>p.market===null)).toBe(true);});
+ it('prázdný dostupný prodejní snímek se odlišuje od chybějícího zdroje',()=>{expect(sum([],'revenue')).toBeNull();expect(dec(null)).toBeNull();});
+});

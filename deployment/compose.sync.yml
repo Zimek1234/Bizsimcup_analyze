@@ -1,0 +1,9 @@
+# One container per game. These values must reference the production project/game.
+services:
+  sync:
+    build:
+      context: ..
+      dockerfile: deployment/Dockerfile.sync
+    env_file: ../service/.env
+    restart: unless-stopped
+    stop_grace_period: 75s

@@ -1,0 +1,55 @@
+// Only the disposable localhost stack; never production or a live data import.
+import {chromium} from '@playwright/test';
+import {readFileSync,existsSync,mkdirSync} from 'node:fs';
+import assert from 'node:assert/strict';
+const root=new URL('../../',import.meta.url);
+const credentials=JSON.parse(readFileSync(new URL('.local/demo.json',root),'utf8'));
+const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH??(existsSync('/usr/bin/chromium')?'/usr/bin/chromium':undefined),args:['--no-sandbox']});
+const page=await browser.newPage({viewport:{width:1440,height:1100}});
+const errors=[];page.on('pageerror',e=>errors.push(e.message));
+try{
+ await page.goto('http://127.0.0.1:3000/');
+ await page.getByLabel('E-mail').fill(credentials.email);await page.getByLabel('Heslo',{exact:true}).fill(credentials.password);
+ await page.getByRole('button',{name:'Přihlásit se',exact:true}).click();await page.getByRole('heading',{name:'Přehled hry',exact:true}).waitFor();
+ await page.getByRole('button',{name:'Podrobnosti',exact:true}).click();
+ assert.match(await page.getByLabel('Výrobek',{exact:true}).locator('option[value="F01"]').innerText(),/^F01 · 500g Nut Muesli$/);
+ const chart=page.getByRole('heading',{name:'Tržby podle výrobků'}).locator('..');
+ await chart.locator('.recharts-xAxis-tick-labels text').first().waitFor();
+ const ticks=await chart.locator('.recharts-xAxis-tick-labels text').allTextContents();
+ assert(ticks.includes('F01'));assert.equal(ticks.length,new Set(ticks).size);
+ const bounds=await chart.locator('.recharts-xAxis-tick-labels text').evaluateAll(xs=>xs.map(x=>{const r=x.getBoundingClientRect();return {left:r.left,right:r.right};}));
+ for(let i=1;i<bounds.length;i++)assert(bounds[i].left>=bounds[i-1].right,'Product code labels must not overlap');
+ await chart.locator('.recharts-bar-rectangle').first().hover();
+ await chart.locator('.recharts-tooltip-label').filter({hasText:/F\d{2} ·/}).waitFor();
+ await page.getByRole('button',{name:'Trh / Price market',exact:true}).click();
+ const card=page.getByTestId('market-card');await card.getByRole('table').waitFor();
+ assert.match(await card.innerText(),/nejnovější dostupné/);
+ const first=card.locator('tbody tr').first();assert.equal(await first.locator('td').nth(0).locator('.sr-only').count(),0);assert.match(await first.locator('td').nth(1).innerText(),/^F\d{2}$/);
+ mkdirSync(new URL('web/docs/',root),{recursive:true});
+ await card.screenshot({path:new URL('web/docs/market-table-introduction.png',root).pathname});
+ const downloadPromise=page.waitForEvent('download');await card.getByRole('button',{name:'Export CSV'}).click();const download=await downloadPromise;await download.saveAs(new URL('.local/market.csv',root).pathname);
+ const lines=readFileSync(new URL('.local/market.csv',root),'utf8').split('\r\n');assert(lines.length>2);assert(lines.slice(1).every(line=>line.includes('"F')));
+ await page.getByLabel('Tržní oblast',{exact:true}).selectOption('South');
+ assert.equal(await card.locator('tbody tr').first().locator('td').nth(0).locator('.sr-only').count(),0);
+ assert.equal(await card.locator('tbody tr').first().locator('td').nth(3).innerText(),'South');
+ await card.getByRole('button',{name:/Výrobky:/}).click();assert.equal(await card.locator('tbody tr').first().locator('td').nth(1).locator('.sr-only').count(),0);
+ await page.setViewportSize({width:390,height:844});
+ const overflow=await card.getByRole('region').evaluate(el=>el.scrollWidth>el.clientWidth);assert(overflow,'Mobile market table must scroll horizontally');
+ // Synthetic Extended channels are browser-only responses, never stored data.
+ await page.setViewportSize({width:1440,height:1100});
+ const response=await page.request.get('http://127.0.0.1:3000/api/dashboard');const fixture=await response.json();
+ fixture.heads=fixture.heads.filter(h=>!['Sales','SalesExport','SummarySalesExport'].includes(h.dataset));
+ const market=fixture.heads.find(h=>h.dataset==='Market');
+ const latest=[...market.snapshots.rows].sort((a,b)=>Number(b.SIM_ROUND)-Number(a.SIM_ROUND)||Number(b.SIM_PERIOD)-Number(a.SIM_PERIOD))[0];
+ for(const code of ['14','99'])market.snapshots.rows.push({...latest,ID:'browser-test-'+code,DISTRIBUTION_CHANNEL:code,QUANTITY:'2',NET_VALUE:'10',AVERAGE_PRICE:'5'});
+ fixture.heads.find(h=>h.dataset==='Current_Game_Rules').snapshots.rows.push({COMPANY_CODE:'AA',ELEMENT:'Distribution_Channel',DETAIL:'14',VALUE:'Testovací Hypermarkets'});
+ await page.route('**/api/dashboard*',route=>route.fulfill({json:fixture}));
+ await page.getByRole('button',{name:'Nastavení a zdroje',exact:true}).click();await page.getByLabel('Historie: stav uložený do reálného času').fill('2000-01-01T12:00');
+ await page.getByText('Historický stav dostupný při stažení do',{exact:false}).waitFor();
+ await page.getByRole('button',{name:'Trh / Price market',exact:true}).click();
+ await page.getByLabel('Tržní oblast',{exact:true}).selectOption('');await page.getByLabel('Typ obchodu',{exact:true}).selectOption('99');
+ await card.locator('tbody tr').first().waitFor();assert.equal(await card.locator('tbody tr').count(),1);assert.equal(await card.locator('tbody tr').first().locator('td').nth(4).innerText(),'99');
+ await page.getByLabel('Typ obchodu',{exact:true}).selectOption('14');assert.equal(await card.locator('tbody tr').first().locator('td').nth(4).innerText(),'Testovací Hypermarkets');
+ assert.deepEqual(errors,[]);
+ console.log('PASS: real Introduction table, code/name labels, code axis/full tooltip without overlapping ticks, newest period, complete CSV, grouping after filter/sort, mobile scrolling; browser-only extra channels without own sales; screenshot captured. No production writes.');
+}finally{await browser.close();}

@@ -1,0 +1,14 @@
+FROM python:3.12-slim
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+WORKDIR /app
+COPY requirements-service.txt ./
+RUN --mount=type=secret,id=build_ca,required=false \
+    if [ -f /run/secrets/build_ca ]; then export PIP_CERT=/run/secrets/build_ca; fi; \
+    pip install --no-cache-dir -r requirements-service.txt
+COPY erpsim ./erpsim
+COPY resources ./resources
+COPY service ./service
+COPY scripts/worker_launcher.py ./scripts/worker_launcher.py
+RUN useradd --create-home syncuser && chown -R syncuser:syncuser /app
+USER syncuser
+CMD ["python", "scripts/worker_launcher.py", "sync"]
