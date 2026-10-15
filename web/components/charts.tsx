@@ -1,9 +1,9 @@
 'use client';
 import {ResponsiveContainer,LineChart,Line,XAxis,YAxis,Tooltip,CartesianGrid,BarChart,Bar,Legend} from 'recharts';
 const fmt=(n:number)=>new Intl.NumberFormat('cs-CZ',{notation:'compact',maximumFractionDigits:1}).format(n);
-export function Trend({data,currency}:{data:{label:string;value:number|null}[];currency:string}){
+export function Trend({data,currency,measureLabel='Tržby'}:{measureLabel?:string;data:{label:string;value:number|null}[];currency:string}){
  if(!data.length)return <p className="py-12 text-center text-sm text-slate-500">Pro toto období nejsou dostupné srovnatelné údaje.</p>;
- return <div className="h-64 min-w-0" role="img" aria-label="Vývoj tržeb podle kola a herního dne"><ResponsiveContainer width="100%" height="100%"><LineChart data={data} margin={{top:15,right:15,left:0,bottom:5}}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0"/><XAxis dataKey="label" tick={{fontSize:11}} minTickGap={24}/><YAxis tickFormatter={fmt} width={65} tick={{fontSize:11}}/><Tooltip formatter={(value)=>[`${fmt(Number(value))} ${currency}`,'Tržby']} labelFormatter={label=>`Kolo · den: ${label}`}/><Line type="monotone" dataKey="value" stroke="#0f766e" strokeWidth={2.5} isAnimationActive={false} dot={false} connectNulls={false}/></LineChart></ResponsiveContainer></div>;
+ return <div className="h-64 min-w-0" role="img" aria-label={`Vývoj: ${measureLabel} podle kola a herního dne`}><ResponsiveContainer width="100%" height="100%"><LineChart data={data} margin={{top:15,right:15,left:0,bottom:5}}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0"/><XAxis dataKey="label" tick={{fontSize:11}} minTickGap={24}/><YAxis tickFormatter={fmt} width={65} tick={{fontSize:11}}/><Tooltip formatter={(value)=>[`${fmt(Number(value))} ${currency}`,measureLabel]} labelFormatter={label=>`Kolo · den: ${label}`}/><Line type="monotone" dataKey="value" stroke="#0f766e" strokeWidth={2.5} isAnimationActive={false} dot={false} connectNulls={false}/></LineChart></ResponsiveContainer></div>;
 }
 export function Bars({data,unit,productAxis=false}:{data:{label:string;fullLabel?:string;value:number|null}[];unit:string;productAxis?:boolean}){
  if(!data.length)return <p className="py-8 text-sm text-slate-500">Data nejsou dostupná.</p>;
