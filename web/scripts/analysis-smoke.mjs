@@ -10,7 +10,7 @@ try{
  await page.getByRole('button',{name:'Grafy a analýza',exact:true}).click();const view=page.getByTestId('analysis-view');await view.waitFor();
  const actual=await (await page.request.get('http://127.0.0.1:3000/api/dashboard')).json();const expected=new Set(actual.heads.find(h=>h.dataset==='Sales').snapshots.views.filter(r=>r.organization==='AA'&&r.currency==='EUR'&&r.unit==='ST').map(r=>r.product)).size;assert.equal(await view.getByRole('table',{name:'Porovnání výrobků',exact:true}).locator('tbody tr').count(),expected);
  await page.getByLabel('Výrobek',{exact:true}).selectOption('F01');await page.getByRole('heading',{name:'Vývoj vybraného výrobku ve vlastní firmě'}).waitFor();assert.equal(await view.getByRole('table',{name:'Porovnání výrobků',exact:true}).locator('tbody tr').count(),1);
- 
+
  assert((await view.getByLabel('Tržní období',{exact:true}).locator('option').count())>1);
  await page.getByLabel('Výrobek',{exact:true}).selectOption('');
  const verify=view.getByRole('table',{name:'Ověření nastavení Extended',exact:true});assert.match(await verify.innerText(),/Introduction/);assert.match(await verify.innerText(),/Ve zdroji neuvedeno/);assert.equal(await verify.getByText('Shoda',{exact:true}).count(),0);
